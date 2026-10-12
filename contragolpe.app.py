@@ -1,5 +1,21 @@
 import streamlit as st
 
+# Mensagem em destaque para o idoso instalar como aplicativo
+st.info("📲 **Quer ter este aplicativo salvo no seu celular?**")
+
+with st.expander("👉 **Clique aqui para ver como colocar a imagem do App na sua tela!**"):
+    st.markdown("""
+    **Se você está no Android (Google Chrome):**
+    1. Clique nos **3 pontinhos (`⋮`)** no canto superior direito da tela.
+    2. Escolha **"Adicionar à tela inicial"** ou **"Instalar aplicativo"**.
+    3. Pronto! O ícone do **Verificador PIX** vai ficar salvo junto com seus outros aplicativos.
+    
+    *Se a página abriu pelo WhatsApp:* clique nos 3 pontinhos e escolha **"Abrir no Chrome"** para aparecer a opção de instalar!
+    """)
+st.divider()
+
+import streamlit as st
+
 # Configuração para PWA (Ícone na tela inicial)
 st.markdown(
     """
