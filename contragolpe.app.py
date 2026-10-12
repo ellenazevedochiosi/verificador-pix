@@ -1,4 +1,13 @@
 import streamlit as st
+
+# Configuração para PWA (Ícone na tela inicial)
+st.markdown(
+    """
+    <link rel="manifest" href="/app/static/manifest.json">
+    """,
+    unsafe_allow_html=True
+)
+import streamlit as st
 import re
 
 st.set_page_config(
