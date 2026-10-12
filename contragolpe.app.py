@@ -60,7 +60,6 @@ st.divider()
 
 # Lista Completa do Procon-SP + Chaves de Testes Locais
 PROCON_E_FRAUDES_COMPLETO = [
-    # Chaves PIX e Telefones de Testes
     (
         "27995109581",
         84,
@@ -73,7 +72,6 @@ PROCON_E_FRAUDES_COMPLETO = [
         "Chave PIX vinculada a redes de estelionato e falsos empréstimos.",
     ),
     ("11988887777", 12, "Número reportado recentemente em menor escala."),
-    # Registros do Procon-SP
     (
         "123importados.com",
         150,
@@ -957,7 +955,7 @@ df_fraudes = st.session_state.df_fraudes
 # --- CONSULTA DE SEGURANÇA ---
 entrada_usuario = st.text_input(
     "Digite a Chave PIX, Número, CNPJ ou Endereço do Site:",
-    placeholder="Ex: 27995109581, 123importados.com ou 35912902000189",
+    placeholder="Ex: (11) 99999-0000, exemplo.com.br ou 00.000.000/0001-00",
 )
 
 if st.button("🔎 VERIFICAR SEGURANÇA"):
@@ -1019,7 +1017,7 @@ with st.expander("🚨 **Clique aqui para registrar uma nova denúncia**"):
   with st.form("form_denuncia"):
     chave_denuncia = st.text_input(
         "Chave PIX, Site, CNPJ ou Número Suspeito:",
-        placeholder="Ex: sitefalso.com.br ou 00.000.000/0001-00",
+        placeholder="Ex: (11) 99999-0000, siteexemplo.com.br ou 00.000.000/0001-00",
     )
     motivo_denuncia = st.text_area(
         "Descreva o problema (ex: Comprei no site e não recebi, pediram PIX"
