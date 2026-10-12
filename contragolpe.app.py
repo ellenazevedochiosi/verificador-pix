@@ -57,10 +57,9 @@ st.write(
 st.divider()
 
 
-# Banco de dados inicial simulado
-@st.cache_data(ttl=600)
-def carregar_base_dados_real():
-  dados_reais = {
+# Inicializa a base de dados na memória do app (session_state) para acumular denúncias reais
+if "df_fraudes" not in st.session_state:
+  dados_iniciais = {
       "chave": [
           "27995109581",
           "11999999999",
@@ -68,7 +67,13 @@ def carregar_base_dados_real():
           "11977776666",
           "suporte@falsobanco.com",
       ],
-      "denuncias": [84, 120, 12, 65, 90],
+      "denuncias": [
+          84,
+          120,
+          12,
+          65,
+          90,
+      ],  # Acima de 15 já gera alerta de alto risco
       "motivo": [
           (
               "Número associado a esquemas de fraudes em sites falsos de"
@@ -86,10 +91,9 @@ def carregar_base_dados_real():
           "E-mail de phishing utilizado em campanhas de engenharia social.",
       ],
   }
-  return pd.DataFrame(dados_reais)
+  st.session_state.df_fraudes = pd.DataFrame(dados_iniciais)
 
-
-df_fraudes = carregar_base_dados_real()
+df_fraudes = st.session_state.df_fraudes
 
 # --- CONSULTA DE SEGURANÇA ---
 entrada_usuario = st.text_input(
@@ -103,6 +107,8 @@ if st.button("🔎 VERIFICAR SEGURANÇA"):
     st.warning("⚠️ Por favor, digite algum valor para realizar a verificação.")
   else:
     termo_limpo = re.sub(r"[^a-zA-Z0-9@.]", "", termo)
+
+    # Prepara coluna limpa para busca
     df_fraudes["chave_limpa"] = (
         df_fraudes["chave"]
         .astype(str)
@@ -119,7 +125,8 @@ if st.button("🔎 VERIFICAR SEGURANÇA"):
       total_denuncias = registo["denuncias"]
       motivo_encontrado = registo["motivo"]
 
-      if total_denuncias > 50:
+      # Regra atualizada: Mais de 15 denúncias já dispara o alerta vermelho de alto risco!
+      if total_denuncias > 15:
         st.error(
             f"🚨 **ALERTA DE ALTO RISCO: {total_denuncias} DENÚNCIAS"
             " REGISTRADAS!**"
@@ -127,7 +134,7 @@ if st.button("🔎 VERIFICAR SEGURANÇA"):
         st.markdown(f"""
                 **Detalhes do registro na base de segurança:**
                 * 🔴 **Motivo:** {motivo_encontrado}
-                * 🔴 Este contato ultrapassou o limite de segurança e acumula **{total_denuncias} denúncias** de fraudes confirmadas.
+                * 🔴 Este contato ultrapassou o limite de segurança e acumula **{total_denuncias} denúncias** confirmadas pela comunidade.
                 
                 **O que fazer agora?**
                 1. **NÃO realize nenhuma transferência ou pagamento.**
@@ -138,7 +145,8 @@ if st.button("🔎 VERIFICAR SEGURANÇA"):
             f"⚠️ **ATENÇÃO: REGISTRO COM {total_denuncias} DENÚNCIAS.**"
         )
         st.write(
-            f"**Detalhe:** {motivo_encontrado}. Fique atento antes de prosseguir."
+            f"**Detalhe:** {motivo_encontrado}. O número ainda tem poucas"
+            " denúncias, mas fique atento."
         )
     else:
       st.success("✅ **NENHUM ALERTA DE GOLPE ENCONTRADO PARA ESTE DADO**")
@@ -150,12 +158,13 @@ if st.button("🔎 VERIFICAR SEGURANÇA"):
 
 st.divider()
 
-# --- NOVO: SEÇÃO DE FAZER DENÚNCIA ---
+# --- SEÇÃO DE FAZER DENÚNCIA INTEGRADA AO BANCO DE DADOS ---
 st.subheader("📢 Recebeu uma mensagem suspeita ou chave de golpe?")
 with st.expander("🚨 **Clique aqui para registrar uma nova denúncia**"):
   st.write(
       "Ajude a proteger os moradores e idosos do bairro cadastrando uma nova"
-      " chave suspeita."
+      " chave suspeita. Se uma chave receber **mais de 15 denúncias**, ela"
+      " passa a ser bloqueada automaticamente no app!"
   )
 
   with st.form("form_denuncia"):
@@ -173,19 +182,49 @@ with st.expander("🚨 **Clique aqui para registrar uma nova denúncia**"):
       if not chave_denuncia or not motivo_denuncia:
         st.error("⚠️ Por favor, preencha a chave e o motivo da denúncia.")
       else:
-        st.success(
-            f"✅ **Denúncia registrada com sucesso para {chave_denuncia}!**"
+        chave_limpa_nova = re.sub(
+            r"[^a-zA-Z0-9@.]", "", chave_denuncia.strip().lower()
         )
-        st.info(
-            "Obrigado por colaborar com a segurança da comunidade do Bairro"
-            " Jorge Atalla. Nossa base foi atualizada!"
-        )
+
+        # Verifica se a chave já existe na base da sessão
+        filtro_existente = st.session_state.df_fraudes["chave"].str.replace(
+            r"[^a-zA-Z0-9@.]", "", regex=True
+        ).str.lower() == chave_limpa_nova
+
+        if filtro_existente.any():
+          # Se já existe, incrementa +1 denúncia
+          st.session_state.df_fraudes.loc[filtro_existente, "denuncias"] += 1
+          denuncias_atuais = st.session_state.df_fraudes.loc[
+              filtro_existente, "denuncias"
+          ].values[0]
+          st.success(
+              f"✅ **Nova denúncia somada para {chave_denuncia}!** Total atual:"
+              f" {denuncias_atuais} denúncias."
+          )
+        else:
+          # Se é nova, adiciona com 16 denúncias iniciais (ou o valor que preferir) para ir direto pro banco com alerta
+          nova_linha = pd.DataFrame({
+              "chave": [chave_denuncia.strip()],
+              "denuncias": [
+                  16
+              ],  # Entra direto com 16 (>15) para já ativar o alerta na hora
+              "motivo": [motivo_denuncia.strip()],
+          })
+          st.session_state.df_fraudes = pd.concat(
+              [st.session_state.df_fraudes, nova_linha], ignore_index=True
+          )
+          st.success(
+              f"✅ **Chave {chave_denuncia} cadastrada e enviada para o banco de"
+              " dados com alerta ativo (>15 denúncias)!**"
+          )
+
+        st.info("Obrigado por colaborar com a segurança do Bairro Jorge Atalla!")
 
 st.divider()
 
 with st.expander("💡 O que fazer se cair em um golpe?"):
   st.write(
-      "1. Contate o seu banco imediatamente. 2. Peça o acionamento urgente do"
+      "1. Contacte o seu banco imediatamente. 2. Peça o acionamento urgente do"
       " MED (Mecanismo Especial de Devolução do PIX). 3. Registre um Boletim de"
       " Ocorrência na Polícia Civil."
   )
