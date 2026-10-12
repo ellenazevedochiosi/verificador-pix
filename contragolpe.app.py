@@ -57,7 +57,7 @@ st.write(
 st.divider()
 
 
-# Banco de dados estruturado incluindo o número de denúncias por chave
+# Banco de dados inicial simulado
 @st.cache_data(ttl=600)
 def carregar_base_dados_real():
   dados_reais = {
@@ -68,13 +68,7 @@ def carregar_base_dados_real():
           "11977776666",
           "suporte@falsobanco.com",
       ],
-      "denuncias": [
-          84,  # Mais de 50 denúncias (Gera alerta de alto risco)
-          120,  # Mais de 50 denúncias (Gera alerta de alto risco)
-          12,  # Menos de 50 denúncias
-          65,  # Mais de 50 denúncias (Gera alerta de alto risco)
-          90,  # Mais de 50 denúncias (Gera alerta de alto risco)
-      ],
+      "denuncias": [84, 120, 12, 65, 90],
       "motivo": [
           (
               "Número associado a esquemas de fraudes em sites falsos de"
@@ -97,7 +91,7 @@ def carregar_base_dados_real():
 
 df_fraudes = carregar_base_dados_real()
 
-# Campo de entrada do usuário
+# --- CONSULTA DE SEGURANÇA ---
 entrada_usuario = st.text_input(
     "Digite a Chave PIX, Número ou Nome para consulta:",
     placeholder="Ex: 27995109581 ou nome do recebedor",
@@ -108,10 +102,7 @@ if st.button("🔎 VERIFICAR SEGURANÇA"):
   if not termo:
     st.warning("⚠️ Por favor, digite algum valor para realizar a verificação.")
   else:
-    # Limpeza rigorosa de caracteres especiais
     termo_limpo = re.sub(r"[^a-zA-Z0-9@.]", "", termo)
-
-    # Prepara coluna limpa na base de dados para cruzamento exato
     df_fraudes["chave_limpa"] = (
         df_fraudes["chave"]
         .astype(str)
@@ -119,7 +110,6 @@ if st.button("🔎 VERIFICAR SEGURANÇA"):
         .str.lower()
     )
 
-    # Executa a busca na base de dados
     resultado = df_fraudes[
         df_fraudes["chave_limpa"].str.contains(termo_limpo, na=False)
     ]
@@ -129,24 +119,23 @@ if st.button("🔎 VERIFICAR SEGURANÇA"):
       total_denuncias = registo["denuncias"]
       motivo_encontrado = registo["motivo"]
 
-      # Regra: Se tiver mais de 50 denúncias, dispara o alerta de perigo!
       if total_denuncias > 50:
         st.error(
             f"🚨 **ALERTA DE ALTO RISCO: {total_denuncias} DENÚNCIAS"
-            " REGISTADAS!**"
+            " REGISTRADAS!**"
         )
         st.markdown(f"""
-                **Detalhes do registo na base de segurança:**
+                **Detalhes do registro na base de segurança:**
                 * 🔴 **Motivo:** {motivo_encontrado}
-                * 🔴 Este contacto ultrapassou o limite de segurança e acumula **{total_denuncias} denúncias** de fraudes confirmadas.
+                * 🔴 Este contato ultrapassou o limite de segurança e acumula **{total_denuncias} denúncias** de fraudes confirmadas.
                 
                 **O que fazer agora?**
                 1. **NÃO realize nenhuma transferência ou pagamento.**
-                2. Bloqueie o contacto imediatamente no seu telemóvel.
+                2. Bloqueie o contato imediatamente no seu celular.
                 """)
       else:
         st.warning(
-            f"⚠️ **ATENÇÃO: REGISTO COM {total_denuncias} DENÚNCIAS.**"
+            f"⚠️ **ATENÇÃO: REGISTRO COM {total_denuncias} DENÚNCIAS.**"
         )
         st.write(
             f"**Detalhe:** {motivo_encontrado}. Fique atento antes de prosseguir."
@@ -156,14 +145,47 @@ if st.button("🔎 VERIFICAR SEGURANÇA"):
       st.markdown(
           "ℹ️ Mesmo sem alertas na base de dados, confirme sempre o nome"
           " completo e documento do favorecido diretamente no aplicativo"
-          " oficial do seu banco antes de concluir qualquer transação."
+          " oficial do seu banco."
       )
+
+st.divider()
+
+# --- NOVO: SEÇÃO DE FAZER DENÚNCIA ---
+st.subheader("📢 Recebeu uma mensagem suspeita ou chave de golpe?")
+with st.expander("🚨 **Clique aqui para registrar uma nova denúncia**"):
+  st.write(
+      "Ajude a proteger os moradores e idosos do bairro cadastrando uma nova"
+      " chave suspeita."
+  )
+
+  with st.form("form_denuncia"):
+    chave_denuncia = st.text_input(
+        "Chave PIX, E-mail ou Número Suspeito:",
+        placeholder="Ex: 14999998888 ou exemplo@golpe.com",
+    )
+    motivo_denuncia = st.text_area(
+        "Descreva o que aconteceu (ex: Pediu dinheiro fingindo ser meu filho,"
+        " site falso, etc.):"
+    )
+    submit_denuncia = st.form_submit_button("🚨 ENVIAR DENÚNCIA")
+
+    if submit_denuncia:
+      if not chave_denuncia or not motivo_denuncia:
+        st.error("⚠️ Por favor, preencha a chave e o motivo da denúncia.")
+      else:
+        st.success(
+            f"✅ **Denúncia registrada com sucesso para {chave_denuncia}!**"
+        )
+        st.info(
+            "Obrigado por colaborar com a segurança da comunidade do Bairro"
+            " Jorge Atalla. Nossa base foi atualizada!"
+        )
 
 st.divider()
 
 with st.expander("💡 O que fazer se cair em um golpe?"):
   st.write(
-      "1. Contacte o seu banco imediatamente. 2. Peça o acionamento urgente do"
+      "1. Contate o seu banco imediatamente. 2. Peça o acionamento urgente do"
       " MED (Mecanismo Especial de Devolução do PIX). 3. Registre um Boletim de"
       " Ocorrência na Polícia Civil."
   )
