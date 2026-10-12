@@ -1,0 +1,9 @@
+{
+  "short_name": "Verificador PIX",
+  "name": "Verificador de Segurança PIX - Contragolpe",
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#ff4b4b",
+  "display": "standalone",
+  "orientation": "portrait"
+}
